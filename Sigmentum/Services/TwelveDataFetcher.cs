@@ -33,6 +33,15 @@ public class TwelveDataFetcher(string? apiKey)
                 Volume = double.Parse(item.GetProperty("volume").GetString()!, CultureInfo.InvariantCulture)
             }));
         }
+        
+        if (json.RootElement.TryGetProperty("status", out var status) && status.GetString() != "ok")
+        {
+            throw new Exception($"Error fetching data: {json.RootElement.GetProperty("message").GetString()}");
+        }
+        if (candles.Count == 0)
+        {
+            throw new Exception("No data returned");
+        }
 
         candles.Reverse(); // Twelve Data returns newest first
         return candles;

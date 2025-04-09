@@ -22,9 +22,7 @@ public class SmartSignalStrategy
         if (File.Exists(STOCK_FILE)) return;
         Directory.CreateDirectory("Data");
         File.WriteAllLines(STOCK_FILE, [
-            "AAPL", "MSFT", "TSLA", "NVDA", "AMZN", "SPY", "QQQ", "META",
-            "GOOGL", "NFLX", "AMD", "BA", "INTC", "SHOP", "BABA", "COIN", "PLTR", "SOFI",
-            "XLF", "ARKK", "VTI", "IWM"
+            "NVDA", "TSLA", "AMZN", "MSFT", "META", "AMD", "GOOGL", "NFLX"
         ]);
     }
 

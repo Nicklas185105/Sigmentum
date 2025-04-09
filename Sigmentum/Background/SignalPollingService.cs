@@ -71,7 +71,7 @@ public class SignalPollingService(ILogger<SignalPollingService> logger, IConfigu
                         {
                             TimestampUtc = timestamp,
                             Symbol = symbol,
-                            Result = "Error"
+                            Result = ex.Message
                         });
                     }
                 }
