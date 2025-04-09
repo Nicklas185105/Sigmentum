@@ -3,5 +3,8 @@
     image: registry.digitalocean.com/tfwo-container-registry/sigmentum:latest
     container_name: sigmentum
     restart: always
+    environment:
+      - Sigmentum__StockApiKey=${Sigmentum__StockApiKey}
+      - Sigmentum__EnableStockScanning=${Sigmentum__EnableStockScanning}
     ports:
       - "5000:8080"

@@ -55,4 +55,4 @@ Thumbs.db
 # Logs from deploy script (if used)
 /var/log/sigmentum-deploy.log
 
-appsettings*.json
+appsettings.*.json

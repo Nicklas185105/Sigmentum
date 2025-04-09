@@ -6,6 +6,12 @@ using Sigmentum.Endpoints;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
+    .AddEnvironmentVariables(); // <-- this is key!
+
+
 // Add Razor + Blazor support
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -16,7 +22,6 @@ builder.Services.AddScoped(sp =>
     var navManager = sp.GetRequiredService<NavigationManager>();
     return new HttpClient { BaseAddress = new Uri(navManager.BaseUri) };
 });
-
 
 // Register background services
 builder.Services.AddHostedService<EvaluationBackgroundService>();
