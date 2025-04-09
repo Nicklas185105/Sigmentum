@@ -1,0 +1,58 @@
+﻿# .NET build artifacts
+bin/
+obj/
+out/
+*.user
+*.suo
+*.userprefs
+
+# Rider / VSCode project files
+.idea/
+.vscode/
+
+# Log files
+*.log
+logs/
+*.tmp
+
+# Environment/config files
+.env
+*.db
+*.db-shm
+*.db-wal
+
+# Certbot and NGINX cert volumes (only managed on the server)
+nginx/ssl/
+nginx/ssl-data/
+
+# Local publish/build artifacts
+publish/
+*.zip
+
+# Docker
+*.tar
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Runtime dump/crash files
+*.dmp
+*.pid
+*.bak
+*.swp
+
+# Custom project data
+Data/*.csv
+Data/*.json
+Data/*.cache
+Data/evaluated_signals.csv
+Data/last_scan_results.csv
+Data/pending_signals.csv
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Logs from deploy script (if used)
+/var/log/sigmentum-deploy.log
+
+appsettings*.json

@@ -1,0 +1,7 @@
+﻿services:
+  sigmentum:
+    image: registry.digitalocean.com/tfwo-container-registry/sigmentum:latest
+    container_name: sigmentum
+    restart: always
+    ports:
+      - "5000:8080"

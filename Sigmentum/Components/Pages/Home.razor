@@ -1,0 +1,50 @@
+﻿@page "/"
+@inject HttpClient Http
+
+<h1 class="text-2xl font-bold mb-4">Signal Performance Dashboard</h1>
+
+@if (metrics == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="p-4 bg-white rounded shadow">
+            <h2 class="text-xl font-semibold mb-2">Overall Stats</h2>
+            <p><strong>Total Signals:</strong> @metrics.Total</p>
+            <p><strong>Wins:</strong> @metrics.Wins</p>
+            <p><strong>Losses:</strong> @metrics.Losses</p>
+            <p><strong>Win Rate:</strong> @metrics.WinRate.ToString("P1")</p>
+            <p><strong>Last Evaluated:</strong> @metrics.LastEvaluated.ToLocalTime().ToString("g")</p>
+        </div>
+        <div class="p-4 bg-white rounded shadow">
+            <h2 class="text-xl font-semibold mb-2">Top Performing Symbols</h2>
+            <ul>
+                @foreach (var pair in metrics.BestPerformers)
+                {
+                    <li>@pair.Key: @pair.Value wins</li>
+                }
+            </ul>
+        </div>
+    </div>
+}
+
+@code {
+    private Metrics? metrics;
+
+    protected override async Task OnInitializedAsync()
+    {
+        metrics = await Http.GetFromJsonAsync<Metrics>("/api/evaluation-metrics");
+    }
+
+    public class Metrics
+    {
+        public int Total { get; set; }
+        public int Wins { get; set; }
+        public int Losses { get; set; }
+        public double WinRate { get; set; }
+        public Dictionary<string, int> BestPerformers { get; set; } = new();
+        public DateTime LastEvaluated { get; set; }
+    }
+}

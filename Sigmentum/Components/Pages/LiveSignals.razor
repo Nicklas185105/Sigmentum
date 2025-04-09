@@ -1,0 +1,65 @@
+﻿@page "/live-signals"
+@using Sigmentum.Models
+@inject HttpClient Http
+
+<h1 class="text-2xl font-bold mb-4">Dashboard</h1>
+
+<div class="mb-4">
+    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" @onclick="LoadSignals">Refresh Signals</button>
+    <p class="mt-2">Last updated: @lastUpdated</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="bg-white rounded shadow p-4">
+        <h2 class="text-lg font-semibold mb-2">Signal Summary</h2>
+        <p>Total Signals: @signals.Count</p>
+        <p>Buy Signals: @signals.Count(s => s.Type == SignalType.Buy)</p>
+        <p>Sell Signals: @signals.Count(s => s.Type == SignalType.Sell)</p>
+    </div>
+
+    <div class="bg-white rounded shadow p-4">
+        <h2 class="text-lg font-semibold mb-2">Recent Signals</h2>
+        <table class="w-full table-auto border-collapse">
+            <thead>
+            <tr class="bg-gray-100">
+                <th class="border px-4 py-2">Symbol</th>
+                <th class="border px-4 py-2">Type</th>
+                <th class="border px-4 py-2">Reason</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var signal in signals)
+            {
+                <tr class="@(signal.Type == SignalType.Buy ? "bg-green-100" : "bg-red-100")">
+                    <td class="border px-4 py-2">@signal.Symbol</td>
+                    <td class="border px-4 py-2">@signal.Type</td>
+                    <td class="border px-4 py-2">@signal.Reason</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private List<SignalDto> signals = new();
+    private string lastUpdated = "never";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSignals();
+    }
+
+    private async Task LoadSignals()
+    {
+        signals = await Http.GetFromJsonAsync<List<SignalDto>>("/api/live-signals") ?? new();
+        lastUpdated = DateTime.Now.ToString("g");
+    }
+
+    public class SignalDto
+    {
+        public string Symbol { get; set; } = string.Empty;
+        public SignalType Type { get; set; }
+        public string Reason { get; set; } = string.Empty;
+    }
+}

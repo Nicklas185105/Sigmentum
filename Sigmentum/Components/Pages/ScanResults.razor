@@ -1,0 +1,53 @@
+﻿@page "/scan-results"
+@inject HttpClient Http
+
+<h1 class="text-2xl font-bold mb-4">Scan Results</h1>
+
+@if (_scanResults.Count == 0)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table class="table table-striped w-full text-sm">
+        <thead class="thead-dark">
+        <tr>
+            <th class="text-left">Time (UTC)</th>
+            <th class="text-left">Symbol</th>
+            <th class="text-left">Type</th>
+            <th class="text-left">Reason</th>
+            <th class="text-left">Result</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var scan in _scanResults.OrderByDescending(s => s.TimestampUtc))
+        {
+            <tr>
+                <td>@scan.TimestampUtc.ToString("g")</td>
+                <td>@scan.Symbol</td>
+                <td>@scan.Type</td>
+                <td>@scan.Reason</td>
+                <td>@scan.Result</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<ScanResult> _scanResults = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _scanResults = await Http.GetFromJsonAsync<List<ScanResult>>("/api/scan-results") ?? [];
+    }
+
+    public class ScanResult
+    {
+        public DateTime TimestampUtc { get; set; }
+        public string Symbol { get; set; } = string.Empty;
+        public string? Type { get; set; }
+        public string? Reason { get; set; }
+        public string Result { get; set; } = string.Empty;
+    }
+}
