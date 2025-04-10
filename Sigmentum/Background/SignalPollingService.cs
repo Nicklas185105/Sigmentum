@@ -10,7 +10,7 @@ public class SignalPollingService(ILogger<SignalPollingService> logger, IConfigu
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var fetcher = new BinanceDataFetcher();
+        var binanceDataFetcher = new BinanceDataFetcher();
         var twelveFetcher = new TwelveDataFetcher(config.GetValue<string>("Sigmentum:StockApiKey"));
         var strategy = new SmartSignalStrategy();
         var evaluationLogger = new EvaluationLogger();
@@ -33,8 +33,8 @@ public class SignalPollingService(ILogger<SignalPollingService> logger, IConfigu
                     try
                     {
                         var candles = strategy.IsCrypto(symbol)
-                            ? await fetcher.GetHistoricalDataAsync(symbol, "1h", 100)
-                            : await twelveFetcher.GetHistoricalDataAsync(symbol, "1h", 100);
+                            ? await CacheService.BinanceDataCache.GetDataAsync(symbol, "1h", binanceDataFetcher)
+                            : await CacheService.TwelveDataCache.GetDataAsync(symbol, "1h", twelveFetcher);
 
                         if (candles != null)
                         {
@@ -76,7 +76,7 @@ public class SignalPollingService(ILogger<SignalPollingService> logger, IConfigu
                     }
                 }
 
-                SignalCache.LatestSignals = results;
+                CacheService.LatestSignals = results;
                 scanLogger.LogScans(scanLog);
 
                 if (results.Count != 0)

@@ -1,10 +1,11 @@
 ﻿using System.Globalization;
 using System.Text.Json;
+using Sigmentum.Interfaces;
 using Sigmentum.Models;
 
 namespace Sigmentum.Services;
 
-public class TwelveDataFetcher(string? apiKey)
+public class TwelveDataFetcher(string? apiKey) : IFetcher
 {
     private readonly HttpClient _http = new();
 

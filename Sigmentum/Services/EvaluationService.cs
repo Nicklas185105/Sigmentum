@@ -2,24 +2,16 @@
 
 namespace Sigmentum.Services;
 
-public class EvaluationService
+public class EvaluationService(BinanceDataFetcher binanceFetcher, TwelveDataFetcher twelveFetcher)
 {
-    private readonly BinanceDataFetcher _binanceFetcher;
-    private readonly TwelveDataFetcher _twelveFetcher;
-    private const string PendingPath = "Data/pending_signals.csv";
-    private const string EvaluatedPath = "Data/evaluated_signals.csv";
-
-    public EvaluationService(BinanceDataFetcher binanceFetcher, TwelveDataFetcher twelveFetcher)
-    {
-        _binanceFetcher = binanceFetcher;
-        _twelveFetcher = twelveFetcher;
-    }
+    private const string PENDING_PATH = "Data/pending_signals.csv";
+    private const string EVALUATED_PATH = "Data/evaluated_signals.csv";
 
     public async Task EvaluatePendingSignalsAsync()
     {
-        if (!File.Exists(PendingPath)) return;
+        if (!File.Exists(PENDING_PATH)) return;
 
-        var lines = File.ReadAllLines(PendingPath).Skip(1).ToList();
+        var lines = (await File.ReadAllLinesAsync(PENDING_PATH)).Skip(1).ToList();
         var remainingLines = new List<string> { "Symbol,Type,EntryPrice,TargetPrice,TimeoutUtc,Status" };
         var evaluatedLines = new List<string> { "Symbol,Type,EntryPrice,TargetPrice,FinalPrice,Outcome,TimeoutUtc" };
 
@@ -46,16 +38,16 @@ public class EvaluationService
 
             if (symbol.EndsWith("USDT")) // Crypto
             {
-                var candles = await _binanceFetcher.GetHistoricalDataAsync(symbol, "1h", 1);
-                currentPrice = candles.Last().Close;
+                var candle = await CacheService.BinanceDataCache.GetDataAsync(symbol, "1h", binanceFetcher);
+                currentPrice = candle?.Last().Close ?? 0;
             }
             else // Stock
             {
-                var candles = await _twelveFetcher.GetHistoricalDataAsync(symbol, "1h", 2); // grab last two daily closes
-                currentPrice = candles.Last().Close;
+                var candle = await CacheService.TwelveDataCache.GetDataAsync(symbol, "1h", twelveFetcher);
+                currentPrice = candle?.Last().Close ?? 0;
             }
 
-            string outcome = type == "Buy"
+            var outcome = type == "Buy"
                 ? (currentPrice >= target ? "Win" : "Loss")
                 : (currentPrice <= target ? "Win" : "Loss");
 
@@ -63,16 +55,16 @@ public class EvaluationService
         }
 
         // Save updated pending file
-        File.WriteAllLines(PendingPath, remainingLines);
+        await File.WriteAllLinesAsync(PENDING_PATH, remainingLines);
 
         // Append to evaluated file
-        if (File.Exists(EvaluatedPath))
+        if (File.Exists(EVALUATED_PATH))
         {
-            File.AppendAllLines(EvaluatedPath, evaluatedLines.Skip(1)); // skip header if file exists
+            await File.AppendAllLinesAsync(EVALUATED_PATH, evaluatedLines.Skip(1)); // skip header if file exists
         }
         else
         {
-            File.WriteAllLines(EvaluatedPath, evaluatedLines);
+            await File.WriteAllLinesAsync(EVALUATED_PATH, evaluatedLines);
         }
     }
 }

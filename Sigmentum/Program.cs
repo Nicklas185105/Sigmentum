@@ -44,7 +44,7 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
-app.MapGet("/api/live-signals", () => Results.Ok(SignalCache.LatestSignals));
+app.MapGet("/api/live-signals", () => Results.Ok(CacheService.LatestSignals));
 app.MapEvaluationMetrics();
 app.MapScanResults();
 

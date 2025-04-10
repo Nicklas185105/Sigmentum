@@ -1,9 +1,10 @@
 ﻿using System.Text.Json;
+using Sigmentum.Interfaces;
 using Sigmentum.Models;
 
 namespace Sigmentum.Services;
 
-public class BinanceDataFetcher
+public class BinanceDataFetcher : IFetcher
 {
     private readonly HttpClient _http = new();
 
