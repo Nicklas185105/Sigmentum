@@ -1,15 +1,16 @@
 ﻿using System.Globalization;
+using Sigmentum.Interfaces;
 
 namespace Sigmentum.Services;
 
-public class EvaluationService(BinanceDataFetcher binanceFetcher, TwelveDataFetcher twelveFetcher)
+public class EvaluationService(ILogger<EvaluationService> logger, IConfiguration config)
 {
     private const string PENDING_PATH = "Data/pending_signals.csv";
     private const string EVALUATED_PATH = "Data/evaluated_signals.csv";
 
     public async Task EvaluatePendingSignalsAsync()
     {
-        if (!File.Exists(PENDING_PATH)) return;
+        if (!File.Exists(PENDING_PATH)) throw new FileNotFoundException(PENDING_PATH);
 
         var lines = (await File.ReadAllLinesAsync(PENDING_PATH)).Skip(1).ToList();
         var remainingLines = new List<string> { "Symbol,Type,EntryPrice,TargetPrice,TimeoutUtc,Status" };
@@ -20,6 +21,8 @@ public class EvaluationService(BinanceDataFetcher binanceFetcher, TwelveDataFetc
             var parts = line.Split(',');
 
             var symbol = parts[0];
+            if (SmartSignalStrategy.IsStock(symbol) &&
+                !config.GetValue<bool>("Sigmentum:EnableStockScanning")) continue;
             var type = parts[1];
             var entry = double.Parse(parts[2], CultureInfo.InvariantCulture);
             var target = double.Parse(parts[3], CultureInfo.InvariantCulture);
@@ -34,37 +37,34 @@ public class EvaluationService(BinanceDataFetcher binanceFetcher, TwelveDataFetc
                 continue;
             }
 
-            double currentPrice;
-
-            if (symbol.EndsWith("USDT")) // Crypto
-            {
-                var candle = await CacheService.BinanceDataCache.GetDataAsync(symbol, "1h", binanceFetcher);
-                currentPrice = candle?.Last().Close ?? 0;
-            }
-            else // Stock
-            {
-                var candle = await CacheService.TwelveDataCache.GetDataAsync(symbol, "1h", twelveFetcher);
-                currentPrice = candle?.Last().Close ?? 0;
-            }
+            var currentPrice = await GetCurrentPriceAsync(symbol);
 
             var outcome = type == "Buy"
                 ? (currentPrice >= target ? "Win" : "Loss")
                 : (currentPrice <= target ? "Win" : "Loss");
 
+            logger.LogInformation("Evaluated {Symbol} | Type: {Type} | Entry: {Entry} | Target: {Target} | Current: {Current} | Outcome: {Outcome}",
+                symbol, type, entry, target, currentPrice, outcome);
+
             evaluatedLines.Add($"{symbol},{type},{entry},{target},{currentPrice.ToString(CultureInfo.InvariantCulture)},{outcome},{timeout:O}");
         }
 
-        // Save updated pending file
         await File.WriteAllLinesAsync(PENDING_PATH, remainingLines);
 
-        // Append to evaluated file
         if (File.Exists(EVALUATED_PATH))
         {
-            await File.AppendAllLinesAsync(EVALUATED_PATH, evaluatedLines.Skip(1)); // skip header if file exists
+            await File.AppendAllLinesAsync(EVALUATED_PATH, evaluatedLines.Skip(1));
         }
         else
         {
             await File.WriteAllLinesAsync(EVALUATED_PATH, evaluatedLines);
         }
+    }
+
+    private async Task<double> GetCurrentPriceAsync(string symbol)
+    {
+        var cache = symbol.EndsWith("USDT") ? CacheService.BinanceDataCache : CacheService.TwelveDataCache;
+        var candles = await cache.GetDataAsync(symbol, "1h", null);
+        return candles?.Last().Close ?? 0;
     }
 }

@@ -3,6 +3,7 @@ using Sigmentum.Components;
 using Sigmentum.Services;
 using Sigmentum.Background;
 using Sigmentum.Endpoints;
+using Sigmentum.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,9 +24,15 @@ builder.Services.AddScoped(sp =>
     return new HttpClient { BaseAddress = new Uri(navManager.BaseUri) };
 });
 
+// Register services
+builder.Services.AddSingleton<BinanceDataFetcher>();
+builder.Services.AddSingleton<TwelveDataFetcher>();
+builder.Services.AddSingleton<EvaluationService>();
+
 // Register background services
 builder.Services.AddHostedService<EvaluationBackgroundService>();
-builder.Services.AddHostedService<SignalPollingService>();
+builder.Services.AddHostedService<BinancePollingService>();
+builder.Services.AddHostedService<TwelvePollingService>();
 
 // Register any singletons like SignalCache if needed
 // builder.Services.AddSingleton<SignalCache>(); <-- optional if needed

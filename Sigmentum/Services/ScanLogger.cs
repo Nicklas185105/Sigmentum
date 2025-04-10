@@ -7,8 +7,9 @@ public class ScanLogger
 {
     private const string SCAN_LOG_FILE = "Data/last_scan_results.csv";
 
-    public void LogScans(List<ScanResult> results)
+    public void LogScans()
     {
+        var results = CacheService.TwelveDataScanResults.Concat(CacheService.BinanceScanResults).ToList();
         var lines = new List<string> { "TimestampUtc,Symbol,Type,Reason,Result" };
         lines.AddRange(results.Select(result => string.Join(",", result.TimestampUtc.ToString("o", CultureInfo.InvariantCulture), result.Symbol, result.Type ?? "-", result.Reason ?? "No signal", result.Result)));
 

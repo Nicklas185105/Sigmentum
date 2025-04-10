@@ -2,21 +2,31 @@
 using System.Text.Json;
 using Sigmentum.Interfaces;
 using Sigmentum.Models;
+using Sigmentum.Providers;
 
 namespace Sigmentum.Services;
 
-public class TwelveDataFetcher(string? apiKey) : IFetcher
+public class TwelveDataFetcher(IConfiguration config) : IFetcher
 {
     private readonly HttpClient _http = new();
+    private string? _apiKey = config.GetValue<string>("Sigmentum:StockApiKey");
 
     public async Task<List<Candle>?> GetHistoricalDataAsync(string symbol, string interval, int limit)
     {
-        if (apiKey == null)
+        if (_apiKey == null)
         {
-            throw new Exception("No API key provided");
+            var key = config.GetValue<string>("Sigmentum:StockApiKey");
+            if (key != null)
+            {
+                _apiKey = key;
+            }
+            else
+            {
+                throw new Exception("No API key provided");
+            }
         }
         
-        var url = $"https://api.twelvedata.com/time_series?symbol={symbol}&interval={interval}&outputsize={limit}&apikey={apiKey}";
+        var url = $"https://api.twelvedata.com/time_series?symbol={symbol}&interval={interval}&outputsize={limit}&apikey={_apiKey}";
         var response = await _http.GetStringAsync(url);
         var json = JsonDocument.Parse(response);
 
@@ -46,5 +56,13 @@ public class TwelveDataFetcher(string? apiKey) : IFetcher
 
         candles.Reverse(); // Twelve Data returns newest first
         return candles;
+    }
+    
+    public async Task FetchAllSymbolsAndCacheAsync()
+    {
+        foreach (var symbol in SymbolProvider.StockSymbols) // or however you store your symbols
+        {
+            await CacheService.TwelveDataCache.GetDataAsync(symbol, "1h", this);
+        }
     }
 }

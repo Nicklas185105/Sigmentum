@@ -24,5 +24,4 @@ public class BinanceDataFetcher : IFetcher
             Volume = double.Parse(k[5].GetString()!)
         }).ToList();
     }
-
 }

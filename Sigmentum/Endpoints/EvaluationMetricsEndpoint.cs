@@ -1,4 +1,4 @@
-﻿using Sigmentum.Background;
+﻿using Sigmentum.Services;
 
 namespace Sigmentum.Endpoints;
 
@@ -40,7 +40,7 @@ public static class EvaluationMetricsEndpoint
             }
 
             metrics.WinRate = metrics.Total > 0 ? (double)metrics.Wins / metrics.Total : 0;
-            metrics.LastEvaluated = SignalPollingService.LastEvaluatedUtc;
+            metrics.LastEvaluated = CacheService.LastEvaluation;
 
             return Results.Ok(metrics);
         });

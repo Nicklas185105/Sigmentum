@@ -2,11 +2,10 @@
 
 namespace Sigmentum.Background;
 
-public class EvaluationBackgroundService(ILogger<EvaluationBackgroundService> logger, IConfiguration configuration)
+public class EvaluationBackgroundService(ILogger<EvaluationBackgroundService> logger, ILogger<EvaluationService> esLogger, EvaluationService evaluationService)
     : BackgroundService
 {
-    private readonly TimeSpan _interval = TimeSpan.FromMinutes(10);
-    private readonly string? _apiKey = configuration.GetValue<string>("SignalScanner:StockApiKey");
+    private readonly TimeSpan _interval = TimeSpan.FromMinutes(1);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -15,8 +14,8 @@ public class EvaluationBackgroundService(ILogger<EvaluationBackgroundService> lo
             try
             {
                 logger.LogInformation("Running automatic signal evaluation at: {Time}", DateTimeOffset.Now);
-                var evaluator = new EvaluationService(new BinanceDataFetcher(), new TwelveDataFetcher(_apiKey));
-                await evaluator.EvaluatePendingSignalsAsync();
+                await evaluationService.EvaluatePendingSignalsAsync();
+                CacheService.LastEvaluation = DateTime.UtcNow;
             }
             catch (Exception ex)
             {

@@ -11,7 +11,7 @@ public class DataCacheService
 
     private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(10);
 
-    public async Task<List<Candle>?> GetDataAsync(string symbol, string interval, IFetcher fetcher, int limit = 100, bool forceRefresh = false)
+    public async Task<List<Candle>?> GetDataAsync(string symbol, string interval, IFetcher? fetcher, int limit = 100, bool forceRefresh = false)
     {
         var cacheKey = $"{symbol}-{interval}";
 
@@ -23,11 +23,13 @@ public class DataCacheService
             }
         }
 
+        if (fetcher == null) return [];
+        
         var freshData = await fetcher.GetHistoricalDataAsync(symbol, interval, limit);
-        if (freshData != null)
-        {
-            _cache[cacheKey] = new CachedData(freshData, DateTime.UtcNow);
-        }
+        if (freshData == null) return freshData;
+        
+        var time = DateTime.UtcNow;
+        _cache[cacheKey] = new CachedData(freshData, time);
         return freshData;
     }
 }

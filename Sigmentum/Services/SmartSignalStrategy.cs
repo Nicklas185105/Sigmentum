@@ -4,29 +4,7 @@ namespace Sigmentum.Services;
 
 public class SmartSignalStrategy
 {
-    private const string CRYPTO_FILE = "Data/crypto-symbols.txt";
-    private const string STOCK_FILE = "Data/stock-symbols.txt";
-
-    public SmartSignalStrategy()
-    {
-        if (!File.Exists(CRYPTO_FILE))
-        {
-            Directory.CreateDirectory("Data");
-            File.WriteAllLines(CRYPTO_FILE, [
-                "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT", "ADAUSDT",
-                "DOGEUSDT", "MATICUSDT", "AVAXUSDT", "TRXUSDT", "LINKUSDT", "LTCUSDT",
-                "DOTUSDT", "ATOMUSDT", "XLMUSDT", "APTUSDT", "ARBUSDT"
-            ]);
-        }
-
-        if (File.Exists(STOCK_FILE)) return;
-        Directory.CreateDirectory("Data");
-        File.WriteAllLines(STOCK_FILE, [
-            "NVDA", "TSLA", "AMZN", "MSFT", "META", "AMD", "GOOGL", "NFLX"
-        ]);
-    }
-
-    public Signal? Evaluate(List<Candle> candles, string symbol)
+    public static Signal? Evaluate(List<Candle> candles, string symbol)
     {
         if (candles.Count < 50) return null;
 
@@ -87,9 +65,6 @@ public class SmartSignalStrategy
         return null;
     }
 
-    public IEnumerable<string> ExpandedSymbols =>
-        File.ReadAllLines(CRYPTO_FILE).Concat(File.ReadAllLines(STOCK_FILE));
-
-    public bool IsCrypto(string symbol) => symbol.EndsWith("USDT");
-    public bool IsStock(string symbol) => !IsCrypto(symbol);
+    public static bool IsCrypto(string symbol) => symbol.EndsWith("USDT");
+    public static bool IsStock(string symbol) => !IsCrypto(symbol);
 }
