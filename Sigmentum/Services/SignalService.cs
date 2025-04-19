@@ -1,26 +1,78 @@
-﻿using Sigmentum.Models;
+﻿using Sigmentum.Infrastructure.Persistence.DbContext;
+using Sigmentum.Infrastructure.Persistence.Entities;
 
 namespace Sigmentum.Services;
 
-public class SignalService(IndicatorService indicators)
+public class SignalService(ILogger<SignalService> logger, IServiceProvider serviceProvider)
 {
-    public Signal? Evaluate(List<Candle>? candles, string symbol)
+    public int TotalWins { get; private set; }
+    public int TotalLosses { get; private set; }
+    public int WinRate => TotalWins + TotalLosses == 0 ? 0 : (int)((TotalWins / (double)(TotalWins + TotalLosses)) * 100);
+    public static DateTime? LastScanTime => CacheService.LastScanTimestamp;
+    public static DateTime? LastEvaluationTime => CacheService.LastEvaluationTimestamp;
+
+    public List<SignalEntity> LiveSignals { get; private set; } = [];
+
+    public async Task Initialize()
     {
-        var rsi = indicators.CalculateRsi(candles, 14);
-        var sma = indicators.CalculateSma(candles, 50);
-        if (candles == null) return null;
-        var lastPrice = candles.Last().Close;
-
-        if (rsi < 30 && sma != null && lastPrice > sma.Last())
+        try
         {
-            return new Signal
-            {
-                Symbol = symbol,
-                Type = SignalType.Buy,
-                Reason = $"RSI {rsi:F1} < 30 and price {lastPrice} > SMA50"
-            };
+            TotalWins = LoadTotalWins();
+            TotalLosses = LoadTotalLosses();
+            LiveSignals = await LoadRecentLiveSignalsAsync();
         }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to initialize SignalService");
+        }
+    }
 
-        return null;
+    private Task<List<SignalEntity>> LoadRecentLiveSignalsAsync()
+    {
+        // Simulated data: Get latest signals from cache
+        var signals = CacheService.LatestSignals
+            .OrderByDescending(s => s.TriggeredAt)
+            .Take(20)
+            .ToList();
+
+        return Task.FromResult(signals);
+    }
+    
+    private int LoadTotalWins()
+    {
+        using var scope = serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SigmentumDbContext>();
+        
+        var wins = db.EvaluationResults.Where(x => x.Result.Equals("Win"));
+        return wins.Count();
+    }
+    
+    private int LoadTotalLosses()
+    {
+        using var scope = serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SigmentumDbContext>();
+        
+        var losses = db.EvaluationResults.Where(x => x.Result.Equals("Loss"));
+        return losses.Count();
+    }
+
+    public Task<List<SignalEntity>> GetPendingSignals()
+    {
+        using var scope = serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SigmentumDbContext>();
+        
+        // Example: assume pending signals are unevaluated
+        return Task.FromResult(db.Signals
+            .Where(s => s.IsPending)
+            .OrderByDescending(s => s.TriggeredAt)
+            .ToList());
+    }
+
+    public void RefreshSignals()
+    {
+        LiveSignals = CacheService.LatestSignals
+            .OrderByDescending(s => s.TriggeredAt)
+            .Take(20)
+            .ToList();
     }
 }

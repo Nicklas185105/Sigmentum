@@ -1,0 +1,46 @@
+﻿@using Sigmentum.Infrastructure.Persistence.Entities
+@using Sigmentum.Services
+@inject SignalService SignalService
+
+<MudPaper Class="p-4">
+    <MudText Typo="Typo.h6" Class="mb-2">Live Signal Results</MudText>
+
+    @if (_liveSignals == null)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else if (!_liveSignals.Any())
+    {
+        <MudText>No signals to display.</MudText>
+    }
+    else
+    {
+        <MudTable Items="_liveSignals" Hover="true" Dense="true">
+            <HeaderContent>
+                <MudTh>Symbol</MudTh>
+                <MudTh>Indicator</MudTh>
+                <MudTh>Value</MudTh>
+                <MudTh>Type</MudTh>
+                <MudTh>Timestamp</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Symbol">@context.Symbol</MudTd>
+                <MudTd DataLabel="Indicator">@context.Indicator</MudTd>
+                <MudTd DataLabel="Value">@context.SignalValue</MudTd>
+                <MudTd DataLabel="Type">@context.SignalType</MudTd>
+                <MudTd DataLabel="Timestamp">@context.TriggeredAt</MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+</MudPaper>
+
+
+@code {
+    private List<SignalEntity>? _liveSignals;
+    
+    protected override Task OnInitializedAsync()
+    {
+        _liveSignals = SignalService.LiveSignals;
+        return Task.CompletedTask;
+    }
+}

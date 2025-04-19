@@ -4,10 +4,10 @@ namespace Sigmentum.Services;
 
 public class IndicatorService
 {
-    public double CalculateRsi(List<Candle>? candles, int period)
+    public decimal CalculateRsi(List<Candle>? candles, int period)
     {
-        var gains = new List<double>();
-        var losses = new List<double>();
+        var gains = new List<decimal>();
+        var losses = new List<decimal>();
 
         if (candles != null)
             for (var i = 1; i < candles.Count; i++)
@@ -27,7 +27,7 @@ public class IndicatorService
         return 100 - 100 / (1 + rs);
     }
 
-    public List<double>? CalculateSma(List<Candle>? candles, int period)
+    public List<decimal>? CalculateSma(List<Candle>? candles, int period)
     {
         return candles?.Select((c, i) =>
         {

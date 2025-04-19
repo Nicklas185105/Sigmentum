@@ -1,70 +1,76 @@
-﻿using System.Globalization;
-using Sigmentum.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
+using Serilog;
+using Sigmentum.Infrastructure.Persistence.DbContext;
+using Sigmentum.Infrastructure.Persistence.Entities;
 
 namespace Sigmentum.Services;
 
-public class EvaluationService(ILogger<EvaluationService> logger, IConfiguration config)
+public class EvaluationService(
+    ILogger<EvaluationService> logger,
+    IConfiguration config,
+    IServiceProvider serviceProvider)
 {
-    private const string PENDING_PATH = "Data/pending_signals.csv";
-    private const string EVALUATED_PATH = "Data/evaluated_signals.csv";
+    private const decimal TARGET_PERCENTAGE = 0.02m; // 2% price target
 
     public async Task EvaluatePendingSignalsAsync()
     {
-        if (!File.Exists(PENDING_PATH)) throw new FileNotFoundException(PENDING_PATH);
+        using var scope = serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SigmentumDbContext>();
 
-        var lines = (await File.ReadAllLinesAsync(PENDING_PATH)).Skip(1).ToList();
-        var remainingLines = new List<string> { "Symbol,Type,EntryPrice,TargetPrice,TimeoutUtc,Status" };
-        var evaluatedLines = new List<string> { "Symbol,Type,EntryPrice,TargetPrice,FinalPrice,Outcome,TimeoutUtc" };
+        var pendingSignals = await db.Signals
+            .Where(s => s.IsPending)
+            .ToListAsync();
 
-        foreach (var line in lines)
+        var anyEvaluated = false;
+
+        foreach (var signal in pendingSignals)
         {
-            var parts = line.Split(',');
-
-            var symbol = parts[0];
-            if (SmartSignalStrategy.IsStock(symbol) &&
+            if (SmartSignalStrategy.IsStock(signal.Symbol) &&
                 !config.GetValue<bool>("Sigmentum:EnableStockScanning")) continue;
-            var type = parts[1];
-            var entry = double.Parse(parts[2], CultureInfo.InvariantCulture);
-            var target = double.Parse(parts[3], CultureInfo.InvariantCulture);
-            var timeout = DateTime.Parse(parts[4], null, DateTimeStyles.AdjustToUniversal);
-            var status = parts[5];
 
-            if (status != "Pending") continue;
+            // Timeout (simple version — could later use TimeoutUtc column if added)
+            var timeout = signal.TriggeredAt.AddHours(1);
+            if (DateTime.UtcNow < timeout) continue;
 
-            if (DateTime.UtcNow < timeout)
+            var currentPrice = await GetCurrentPriceAsync(signal.Symbol);
+            if (currentPrice == 0) continue;
+
+            var targetPrice = signal.EntryPrice * (1 + TARGET_PERCENTAGE);
+            var isWin = signal.SignalType == "Buy"
+                ? currentPrice >= targetPrice
+                : currentPrice <= targetPrice;
+
+            var result = isWin ? "Win" : "Loss";
+
+            // Save evaluation result
+            var evaluation = new EvaluationResultEntity
             {
-                remainingLines.Add(line);
-                continue;
-            }
+                Symbol = signal.Symbol,
+                Exchange = signal.Exchange,
+                SignalType = signal.SignalType,
+                Result = result,
+                EvaluatedAt = DateTime.UtcNow
+            };
+            db.EvaluationResults.Add(evaluation);
 
-            var currentPrice = await GetCurrentPriceAsync(symbol);
+            // Mark signal as processed
+            signal.IsPending = false;
 
-            var outcome = type == "Buy"
-                ? (currentPrice >= target ? "Win" : "Loss")
-                : (currentPrice <= target ? "Win" : "Loss");
-
-            logger.LogInformation("Evaluated {Symbol} | Type: {Type} | Entry: {Entry} | Target: {Target} | Current: {Current} | Outcome: {Outcome}",
-                symbol, type, entry, target, currentPrice, outcome);
-
-            evaluatedLines.Add($"{symbol},{type},{entry},{target},{currentPrice.ToString(CultureInfo.InvariantCulture)},{outcome},{timeout:O}");
+            Log.ForContext("LogToDb", true)
+                .Information("Evaluated {Symbol} | Type: {Type} | Entry: {Entry} | Target: {Target} | Current: {Current} | Outcome: {Outcome}",
+                signal.Symbol, signal.SignalType, signal.EntryPrice, targetPrice, currentPrice, result);
+            
+            anyEvaluated = true;
         }
-
-        await File.WriteAllLinesAsync(PENDING_PATH, remainingLines);
-
-        if (File.Exists(EVALUATED_PATH))
-        {
-            await File.AppendAllLinesAsync(EVALUATED_PATH, evaluatedLines.Skip(1));
-        }
-        else
-        {
-            await File.WriteAllLinesAsync(EVALUATED_PATH, evaluatedLines);
-        }
+        
+        if (anyEvaluated)
+            await db.SaveChangesAsync();
     }
 
-    private async Task<double> GetCurrentPriceAsync(string symbol)
+    private async Task<decimal> GetCurrentPriceAsync(string symbol)
     {
         var cache = symbol.EndsWith("USDT") ? CacheService.BinanceDataCache : CacheService.TwelveDataCache;
-        var candles = await cache.GetDataAsync(symbol, "1h", null);
-        return candles?.Last().Close ?? 0;
+        var candles = await cache.GetDataAsync(symbol, symbol.EndsWith("USDT") ? "1m" : "30min", null);
+        return candles?.LatestCandle?.Close ?? 0;
     }
 }

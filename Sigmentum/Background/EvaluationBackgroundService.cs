@@ -13,9 +13,9 @@ public class EvaluationBackgroundService(ILogger<EvaluationBackgroundService> lo
         {
             try
             {
-                logger.LogInformation("Running automatic signal evaluation at: {Time}", DateTimeOffset.Now);
+                logger.LogDebug("Running automatic signal evaluation at: {Time}", DateTimeOffset.Now);
                 await evaluationService.EvaluatePendingSignalsAsync();
-                CacheService.LastEvaluation = DateTime.UtcNow;
+                CacheService.LastEvaluationTimestamp = DateTimeOffset.Now.DateTime;
             }
             catch (Exception ex)
             {

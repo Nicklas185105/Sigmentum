@@ -40,7 +40,7 @@ public static class EvaluationMetricsEndpoint
             }
 
             metrics.WinRate = metrics.Total > 0 ? (double)metrics.Wins / metrics.Total : 0;
-            metrics.LastEvaluated = CacheService.LastEvaluation;
+            metrics.LastEvaluated = CacheService.LastEvaluationTimestamp;
 
             return Results.Ok(metrics);
         });

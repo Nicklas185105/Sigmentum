@@ -7,11 +7,11 @@ public class EvaluationLogger
 {
     private const string PendingFilePath = "Data/pending_signals.csv";
 
-    public void SavePendingSignal(Signal signal, double entryPrice)
+    public void SavePendingSignal(Signal signal, decimal entryPrice)
     {
         var target = signal.Type == SignalType.Buy
-            ? entryPrice * 1.005
-            : entryPrice * 0.995;
+            ? entryPrice * 1.005m
+            : entryPrice * 0.995m;
 
         var timeout = DateTime.UtcNow.AddHours(1).ToString("o", CultureInfo.InvariantCulture);
         var line = $"{signal.Symbol},{signal.Type},{entryPrice.ToString(CultureInfo.InvariantCulture)},{target.ToString(CultureInfo.InvariantCulture)},{timeout},Pending";

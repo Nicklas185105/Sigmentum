@@ -17,11 +17,11 @@ public class BinanceDataFetcher : IFetcher
         return klines?.Select(k => new Candle
         {
             Time = DateTimeOffset.FromUnixTimeMilliseconds(k[0].GetInt64()).UtcDateTime,
-            Open = double.Parse(k[1].GetString()!),
-            High = double.Parse(k[2].GetString()!),
-            Low = double.Parse(k[3].GetString()!),
-            Close = double.Parse(k[4].GetString()!),
-            Volume = double.Parse(k[5].GetString()!)
+            Open = decimal.Parse(k[1].GetString()!),
+            High = decimal.Parse(k[2].GetString()!),
+            Low = decimal.Parse(k[3].GetString()!),
+            Close = decimal.Parse(k[4].GetString()!),
+            Volume = decimal.Parse(k[5].GetString()!)
         }).ToList();
     }
 }

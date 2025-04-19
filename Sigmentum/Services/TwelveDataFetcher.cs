@@ -37,11 +37,11 @@ public class TwelveDataFetcher(IConfiguration config) : IFetcher
             .Select(item => new Candle
             {
                 Time = DateTime.Parse(item.GetProperty("datetime").GetString()!, CultureInfo.InvariantCulture),
-                Open = double.Parse(item.GetProperty("open").GetString()!, CultureInfo.InvariantCulture),
-                High = double.Parse(item.GetProperty("high").GetString()!, CultureInfo.InvariantCulture),
-                Low = double.Parse(item.GetProperty("low").GetString()!, CultureInfo.InvariantCulture),
-                Close = double.Parse(item.GetProperty("close").GetString()!, CultureInfo.InvariantCulture),
-                Volume = double.Parse(item.GetProperty("volume").GetString()!, CultureInfo.InvariantCulture)
+                Open = decimal.Parse(item.GetProperty("open").GetString()!, CultureInfo.InvariantCulture),
+                High = decimal.Parse(item.GetProperty("high").GetString()!, CultureInfo.InvariantCulture),
+                Low = decimal.Parse(item.GetProperty("low").GetString()!, CultureInfo.InvariantCulture),
+                Close = decimal.Parse(item.GetProperty("close").GetString()!, CultureInfo.InvariantCulture),
+                Volume = decimal.Parse(item.GetProperty("volume").GetString()!, CultureInfo.InvariantCulture)
             }));
         }
         

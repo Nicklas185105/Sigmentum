@@ -1,0 +1,44 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using Sigmentum.Infrastructure.Persistence.DbContext
+@using Sigmentum.Infrastructure.Persistence.Entities
+@inject IDbContextFactory<LogDbContext> LogDbFactory
+
+<MudPaper Class="p-4">
+    <MudText Typo="Typo.h6" Class="mb-2">Error Log</MudText>
+
+    @if (_logs == null)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else if (!_logs.Any())
+    {
+        <MudText>No errors logged.</MudText>
+    }
+    else
+    {
+        <MudTable Items="_logs" Hover="true" Dense="true">
+            <HeaderContent>
+                <MudTh>Timestamp</MudTh>
+                <MudTh>Level</MudTh>
+                <MudTh>Message</MudTh>
+                <MudTh>Exception</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.TimeStamp.ToString("yyyy-MM-dd HH:mm:ss")</MudTd>
+                <MudTd>@context.Level</MudTd>
+                <MudTd>@context.Message</MudTd>
+                <MudTd>@(string.IsNullOrEmpty(context.Exception) ? "-" : context.Exception)</MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+</MudPaper>
+
+@code {
+    private List<LogEvent>? _logs;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await LogDbFactory.CreateDbContextAsync();
+        _logs = await db.Logs.Where(x => !x.Level.Equals("Information")).OrderByDescending(x => x.TimeStamp).Take(50).ToListAsync();;
+    }
+}

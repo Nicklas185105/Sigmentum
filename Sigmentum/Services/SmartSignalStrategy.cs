@@ -18,44 +18,44 @@ public class SmartSignalStrategy
 
         var isRsiCrossUp = rsi[idx - 1] < 30 && rsi[idx] >= 30;
         var isEmaCrossover = ema9[idx - 1] < ema21[idx - 1] && ema9[idx] > ema21[idx];
-        var isVolumeSpike = volume[idx] > volume.Average() * 1.5;
+        var isVolumeSpike = volume[idx] > volume.Average() * 1.5m;
 
+        var result = new Signal
+        {
+            Symbol = symbol,
+            Type = SignalType.Buy,
+            RsiValue = rsi[idx],
+            Ema9 = ema9[idx],
+            Ema21 = ema21[idx],
+            Volume = volume[idx],
+            ClosePrice = closePrices[idx],
+            StrategyVersion = "v1.0"
+        };
+        
         switch (isRsiCrossUp)
         {
             case true when isEmaCrossover && isVolumeSpike:
-                return new Signal
-                {
-                    Symbol = symbol,
-                    Type = SignalType.Buy,
-                    Reason = "RSI cross-up + EMA crossover + Volume spike"
-                };
+                result.Reason = "RSI cross-up + EMA crossover + Volume spike";
+                result.Value = (decimal)result.RsiValue;
+                return result;
             case true:
-                return new Signal
-                {
-                    Symbol = symbol,
-                    Type = SignalType.Buy,
-                    Reason = "RSI cross-up"
-                };
+                result.Reason = "RSI cross-up";
+                result.Value = (decimal)result.RsiValue;
+                return result;
             default:
             {
                 if (isEmaCrossover)
                 {
-                    return new Signal
-                    {
-                        Symbol = symbol,
-                        Type = SignalType.Buy,
-                        Reason = "EMA crossover"
-                    };
+                    result.Reason = "EMA crossover";
+                    result.Value = (decimal)result.Ema9;
+                    return result;
                 }
 
                 if (isVolumeSpike)
                 {
-                    return new Signal
-                    {
-                        Symbol = symbol,
-                        Type = SignalType.Buy,
-                        Reason = "Volume spike"
-                    };
+                    result.Reason = "Volume spike";
+                    result.Value = (decimal)result.Volume;
+                    return result;
                 }
 
                 break;
