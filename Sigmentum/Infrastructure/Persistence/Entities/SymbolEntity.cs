@@ -2,23 +2,22 @@
 
 namespace Sigmentum.Infrastructure.Persistence.Entities;
 
-public class ScanEntity
+public class SymbolEntity
 {
     [Key]
     public Guid Id { get; set; } = Guid.NewGuid();
-
-    [Required]
-    public string Symbol { get; set; } = string.Empty;
-
-    [Required]
-    public string Exchange { get; set; } = string.Empty;
-
-    [Required]
-    public string IndicatorsJson { get; set; } = string.Empty; // store as JSONB
-
-    [Required]
-    public DateTime ScannedAt { get; set; } = DateTime.UtcNow;
     
     [Required]
-    public bool IsTest { get; set; } = false;
+    public string Symbol { get; set; } = string.Empty;
+    
+    [Required]
+    public bool IsStock { get; set; } = false;
+    
+    [Required]
+    public int WinCount { get; set; } = 0;
+    
+    [Required]
+    public int LossCount { get; set; } = 0;
+    
+    public ICollection<SignalEntity> Signals { get; set; } = new List<SignalEntity>();
 }

@@ -34,6 +34,9 @@ namespace Sigmentum.Migrations
                     b.Property<string>("Exception")
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsTest")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Level")
                         .IsRequired()
                         .HasColumnType("text");
@@ -59,6 +62,9 @@ namespace Sigmentum.Migrations
                     b.Property<string>("Exchange")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsTest")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Result")
                         .IsRequired()
@@ -90,6 +96,9 @@ namespace Sigmentum.Migrations
                     b.Property<string>("IndicatorsJson")
                         .IsRequired()
                         .HasColumnType("jsonb");
+
+                    b.Property<bool>("IsTest")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("ScannedAt")
                         .HasColumnType("timestamp without time zone");
@@ -123,6 +132,9 @@ namespace Sigmentum.Migrations
                     b.Property<bool>("IsPending")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsTest")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("SignalType")
                         .IsRequired()
                         .HasColumnType("text");
@@ -134,9 +146,8 @@ namespace Sigmentum.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Symbol")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<Guid>("SymbolId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("TriggeredAt")
                         .HasColumnType("timestamp without time zone");
@@ -145,12 +156,52 @@ namespace Sigmentum.Migrations
 
                     b.HasIndex("IsPending");
 
-                    b.HasIndex("Symbol", "TriggeredAt");
+                    b.HasIndex("SymbolId", "TriggeredAt");
 
-                    b.HasIndex("Symbol", "Exchange", "SignalType", "TriggeredAt")
+                    b.HasIndex("SymbolId", "Exchange", "SignalType", "TriggeredAt")
                         .IsUnique();
 
                     b.ToTable("Signals");
+                });
+
+            modelBuilder.Entity("Sigmentum.Infrastructure.Persistence.Entities.SymbolEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsStock")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("LossCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Symbol")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("WinCount")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Symbols");
+                });
+
+            modelBuilder.Entity("Sigmentum.Infrastructure.Persistence.Entities.SignalEntity", b =>
+                {
+                    b.HasOne("Sigmentum.Infrastructure.Persistence.Entities.SymbolEntity", "Symbol")
+                        .WithMany("Signals")
+                        .HasForeignKey("SymbolId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Symbol");
+                });
+
+            modelBuilder.Entity("Sigmentum.Infrastructure.Persistence.Entities.SymbolEntity", b =>
+                {
+                    b.Navigation("Signals");
                 });
 #pragma warning restore 612, 618
         }

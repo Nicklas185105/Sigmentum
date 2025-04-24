@@ -2,7 +2,6 @@
 using Serilog;
 using Serilog.Context;
 using Sigmentum.Models;
-using Sigmentum.Providers;
 using Sigmentum.Services;
 using Sigmentum.Infrastructure.Persistence.Entities;
 using Sigmentum.Infrastructure.Persistence.DbContext;
@@ -20,24 +19,29 @@ public class TwelvePollingService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var scanLogger = new ScanLogger();
-
-        if (!config.GetValue<bool>("Sigmentum:EnableStockScanning"))
-        {
-            CacheService.TwelveDataScanResults = SymbolProvider.StockSymbols.Select(symbol => new ScanResult
-            {
-                TimestampUtc = DateTime.UtcNow,
-                Symbol = symbol,
-                Result = "Stock scanning is disabled"
-            }).ToList();
-            scanLogger.LogScans();
-            return;
-        }
-
+        #if DEBUG
+        const bool isDebug = true;
+        #else
+        const bool isDebug = false;
+        #endif
+        
         while (!stoppingToken.IsCancellationRequested)
         {
             using var scope = serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<SigmentumDbContext>();
+            
+            var symbols = db.Symbols.Where(x => x.IsStock).ToList();
+            
+            if (!config.GetValue<bool>("Sigmentum:EnableStockScanning"))
+            {
+                CacheService.TwelveDataScanResults = symbols.Select(symbol => new ScanResult
+                {
+                    TimestampUtc = DateTime.UtcNow,
+                    Symbol = symbol.Symbol,
+                    Result = "Stock scanning is disabled"
+                }).ToList();
+                return;
+            }
 
             try
             {
@@ -47,14 +51,14 @@ public class TwelvePollingService(
                 var timestamp = DateTimeOffset.Now.DateTime;
                 CacheService.LastScanTimestamp = timestamp;
 
-                foreach (var symbol in SymbolProvider.StockSymbols)
+                foreach (var symbol in symbols)
                 {
                     try
                     {
-                        var candles = await CacheService.TwelveDataCache.GetDataAsync(symbol, "30min", twelveFetcher);
+                        var candles = await CacheService.TwelveDataCache.GetDataAsync(symbol.Symbol, "30min", twelveFetcher);
                         if (candles == null) continue;
 
-                        var signal = SmartSignalStrategy.Evaluate(candles.Data, symbol);
+                        var signal = SmartSignalStrategy.Evaluate(candles.Data, symbol.Symbol);
                         if (signal != null)
                         {
                             var dedupHours = config.GetValue<int>("Sigmentum:SignalDeduplicationHours");
@@ -69,7 +73,7 @@ public class TwelvePollingService(
                             scanLog.Add(new ScanResult
                             {
                                 TimestampUtc = timestamp,
-                                Symbol = symbol,
+                                Symbol = symbol.Symbol,
                                 Type = signal.Type.ToString(),
                                 Reason = signal.Reason,
                                 Result = "Signal Generated"
@@ -80,6 +84,7 @@ public class TwelvePollingService(
                                 var entity = new SignalEntity
                                 {
                                     Symbol = symbol,
+                                    SymbolId = symbol.Id,
                                     Exchange = "TwelveData",
                                     SignalType = signal.Type.ToString(),
                                     SignalValue = signal.Value,
@@ -87,21 +92,22 @@ public class TwelvePollingService(
                                     Indicator = signal.Reason,
                                     IsPending = true,
                                     EntryPrice = (decimal)signal.ClosePrice!,
-                                    StrategyVersion = signal.StrategyVersion
+                                    StrategyVersion = signal.StrategyVersion,
+                                    IsTest = isDebug
                                 };
                                 results.Add(entity);
                                 db.Signals.Add(entity);
                                 
-                                using (LogContext.PushProperty("Symbol", symbol))
+                                using (LogContext.PushProperty("Symbol", symbol.Symbol))
                                 {
                                     Log.ForContext("LogToDb", true)
                                         .Information("Generated signal for {Symbol} | Type: {Type} | Value: {Value} | TriggeredAt: {TriggeredAt}",
-                                            symbol, signal.Type, signal.RsiValue, timestamp);
+                                            symbol.Symbol, signal.Type, signal.RsiValue, timestamp);
                                 }
                             }
                             else
                             {
-                                logger.LogDebug("Duplicate signal skipped for {Symbol} at {Time}", symbol, timestamp);
+                                logger.LogDebug("Duplicate signal skipped for {Symbol} at {Time}", symbol.Symbol, timestamp);
                             }
                         }
                         else
@@ -109,7 +115,7 @@ public class TwelvePollingService(
                             scanLog.Add(new ScanResult
                             {
                                 TimestampUtc = timestamp,
-                                Symbol = symbol,
+                                Symbol = symbol.Symbol,
                                 Type = "N/A",
                                 Reason = "No Signal",
                                 Result = "No Signal Generated"
@@ -118,11 +124,11 @@ public class TwelvePollingService(
                     }
                     catch (Exception ex)
                     {
-                        logger.LogWarning(ex, "Scan failed for {Symbol}", symbol);
+                        logger.LogWarning(ex, "Scan failed for {Symbol}", symbol.Symbol);
                         scanLog.Add(new ScanResult
                         {
                             TimestampUtc = timestamp,
-                            Symbol = symbol,
+                            Symbol = symbol.Symbol,
                             Result = ex.Message
                         });
                     }
@@ -135,7 +141,6 @@ public class TwelvePollingService(
 
                 CacheService.LatestSignals = results;
                 CacheService.TwelveDataScanResults = scanLog;
-                scanLogger.LogScans();
             }
             catch (Exception ex)
             {

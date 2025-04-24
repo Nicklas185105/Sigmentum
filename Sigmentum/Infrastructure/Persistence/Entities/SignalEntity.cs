@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Sigmentum.Infrastructure.Persistence.Entities;
 
@@ -6,10 +7,13 @@ public class SignalEntity
 {
     [Key]
     public Guid Id { get; set; } = Guid.NewGuid();
-
+    
     [Required]
-    public string Symbol { get; set; } = string.Empty;
+    public Guid SymbolId { get; set; }
 
+    [ForeignKey(nameof(SymbolId))]
+    public SymbolEntity? Symbol { get; set; } = default!;
+    
     [Required]
     public string Exchange { get; set; } = string.Empty;
 
@@ -32,4 +36,7 @@ public class SignalEntity
     
     [Required]
     public DateTime TriggeredAt { get; set; } = DateTime.UtcNow;
+    
+    [Required]
+    public bool IsTest { get; set; } = false;
 }

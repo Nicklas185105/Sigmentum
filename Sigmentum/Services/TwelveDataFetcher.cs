@@ -2,7 +2,6 @@
 using System.Text.Json;
 using Sigmentum.Interfaces;
 using Sigmentum.Models;
-using Sigmentum.Providers;
 
 namespace Sigmentum.Services;
 
@@ -58,11 +57,12 @@ public class TwelveDataFetcher(IConfiguration config) : IFetcher
         return candles;
     }
     
-    public async Task FetchAllSymbolsAndCacheAsync()
-    {
-        foreach (var symbol in SymbolProvider.StockSymbols) // or however you store your symbols
-        {
-            await CacheService.TwelveDataCache.GetDataAsync(symbol, "1h", this);
-        }
-    }
+    // public async Task FetchAllSymbolsAndCacheAsync()
+    // {
+    //     
+    //     foreach (var symbol in SymbolProvider.StockSymbols) // or however you store your symbols
+    //     {
+    //         await CacheService.TwelveDataCache.GetDataAsync(symbol, "1h", this);
+    //     }
+    // }
 }

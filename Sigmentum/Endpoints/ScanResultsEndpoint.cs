@@ -8,8 +8,7 @@ public static class ScanResultsEndpoint
     {
         app.MapGet("/api/scan-results", () =>
         {
-            var logger = new ScanLogger();
-            var results = logger.LoadScanResults();
+            var results = CacheService.TwelveDataScanResults.Concat(CacheService.BinanceScanResults).ToList();
             return Results.Ok(results);
         });
     }

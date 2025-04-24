@@ -17,4 +17,7 @@ public class ErrorEntity
 
     [Required]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    
+    [Required]
+    public bool IsTest { get; set; } = false;
 }

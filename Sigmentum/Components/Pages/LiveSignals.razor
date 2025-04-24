@@ -31,7 +31,7 @@
             @foreach (var signal in signals)
             {
                 <tr class="@(signal.Type == SignalType.Buy ? "bg-green-100" : "bg-red-100")">
-                    <td class="border px-4 py-2">@signal.Symbol</td>
+                    <td class="border px-4 py-2">@signal.Symbol.Symbol</td>
                     <td class="border px-4 py-2">@signal.Type</td>
                     <td class="border px-4 py-2">@signal.Reason</td>
                 </tr>
@@ -58,8 +58,13 @@
 
     public class SignalDto
     {
-        public string Symbol { get; set; } = string.Empty;
+        public SymbolDto Symbol { get; set; } = default!;
         public SignalType Type { get; set; }
         public string Reason { get; set; } = string.Empty;
+    }
+    
+    public class SymbolDto
+    {
+        public string Symbol { get; set; } = string.Empty;
     }
 }

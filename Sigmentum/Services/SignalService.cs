@@ -1,4 +1,5 @@
-﻿using Sigmentum.Infrastructure.Persistence.DbContext;
+﻿using Microsoft.EntityFrameworkCore;
+using Sigmentum.Infrastructure.Persistence.DbContext;
 using Sigmentum.Infrastructure.Persistence.Entities;
 
 namespace Sigmentum.Services;
@@ -65,6 +66,7 @@ public class SignalService(ILogger<SignalService> logger, IServiceProvider servi
         return Task.FromResult(db.Signals
             .Where(s => s.IsPending)
             .OrderByDescending(s => s.TriggeredAt)
+            .Include(s => s.Symbol)
             .ToList());
     }
 

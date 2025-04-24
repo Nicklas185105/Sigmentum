@@ -21,4 +21,7 @@ public class EvaluationResultEntity
 
     [Required]
     public DateTime EvaluatedAt { get; set; } = DateTime.UtcNow;
+    
+    [Required]
+    public bool IsTest { get; set; } = false;
 }
