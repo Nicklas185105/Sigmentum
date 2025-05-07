@@ -15,7 +15,7 @@ public static class Indicators
 
         gain /= period;
         loss /= period;
-        result.Add(100 - 100 / (1 + gain / loss));
+        result.Add(100 - 100 / (1 + gain / (loss == 0 ? 0.01m : loss)));
 
         for (var i = period + 1; i < prices.Count; i++)
         {

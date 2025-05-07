@@ -6,5 +6,6 @@
     environment:
       - Sigmentum__StockApiKey=${Sigmentum__StockApiKey}
       - Sigmentum__EnableStockScanning=${Sigmentum__EnableStockScanning}
+      - ConnectionStrings__DBConnection=${ConnectionStrings__DBConnection}
     ports:
       - "5000:8080"

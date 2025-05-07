@@ -62,11 +62,13 @@ public class EvaluationService(
                 };
                 db.EvaluationResults.Add(evaluation);
 
+                #if !DEBUG
                 if (result == "Win")
                     signal.Symbol.WinCount++;
                 else
                     signal.Symbol.LossCount++;
                 db.Symbols.Update(signal.Symbol);
+                #endif
 
                 // Mark signal as processed
                 signal.IsPending = false;
